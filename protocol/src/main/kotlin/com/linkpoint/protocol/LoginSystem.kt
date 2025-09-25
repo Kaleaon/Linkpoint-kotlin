@@ -238,15 +238,13 @@ class LoginSystem {
     /**
      * Parse XMLRPC login response into LoginResponse data class
      * 
-     * This is a simplified parser for demonstration. A production implementation
-     * would use a proper XMLRPC library for robust parsing.
+     * Parses the XML response from SecondLife/OpenSim login servers.
+     * TODO: Implement proper XML parsing using a robust XML library.
      */
     private fun parseLoginResponse(xmlResponse: String): LoginResponse {
-        // Simplified parsing - in production, use proper XML parsing
         println("📋 Parsing login response...")
         
-        // For demo purposes, simulate a successful login response
-        // In reality, this would parse the actual XML response from the server
+        // Check for fault responses
         if (xmlResponse.contains("fault") || xmlResponse.contains("error")) {
             return LoginResponse(
                 success = false,
@@ -264,21 +262,10 @@ class LoginSystem {
             )
         }
         
-        // Simulate successful response parsing
-        return LoginResponse(
-            success = true,
-            sessionId = "demo-session-${System.currentTimeMillis()}",
-            agentId = "demo-agent-${System.currentTimeMillis()}",
-            secureSessionId = "demo-secure-${System.currentTimeMillis()}",
-            simIp = "127.0.0.1", // Localhost for demo
-            simPort = 9000,
-            seedCapability = "http://127.0.0.1:9000/cap/seed",
-            circuitCode = 12345,
-            lookAt = listOf(1.0f, 0.0f, 0.0f),
-            agentAccess = "PG",
-            message = "Welcome to the virtual world!",
-            reason = null
-        )
+        // TODO: Implement proper XMLRPC response parsing
+        // This is a placeholder that needs to be replaced with actual XML parsing
+        // that extracts session_id, agent_id, sim_ip, sim_port, etc. from the response
+        throw NotImplementedError("XMLRPC response parsing not yet implemented - requires XML parsing library")
     }
     
     /**

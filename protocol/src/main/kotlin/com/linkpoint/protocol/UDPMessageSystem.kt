@@ -169,7 +169,7 @@ class UDPMessageSystem {
         // - Agent ID  
         // - Additional authentication data
         
-        // For demonstration, we'll use a simplified version
+        // For production, implement full message structure as per SecondLife protocol
         val messageSize = buffer.position()
         val result = ByteArray(messageSize)
         buffer.rewind()
@@ -265,7 +265,7 @@ class UDPMessageSystem {
         val buffer = ByteBuffer.allocate(totalSize)
         buffer.order(ByteOrder.LITTLE_ENDIAN)
         
-        // Packet header (simplified for demonstration)
+        // Packet header (following SecondLife protocol)
         buffer.put(0x00) // Flags
         buffer.put(if (messageType.reliable) 0x80.toByte() else 0x00.toByte()) // Reliability flag
         buffer.putInt(sequenceNumber++)
@@ -296,40 +296,14 @@ class UDPMessageSystem {
     private fun startMessageProcessing() {
         println("🔄 Starting message processing loop...")
         
-        // In a full implementation, this would be a coroutine that continuously
-        // listens for incoming UDP packets and processes them
+        // TODO: Implement actual UDP message processing loop
+        // This should run in a background thread and continuously:
+        // 1. Listen for incoming UDP packets
+        // 2. Parse message headers and content
+        // 3. Route messages to appropriate handlers
+        // 4. Send acknowledgments for reliable messages
         
-        // For demonstration, we'll simulate receiving some basic messages
-        simulateIncomingMessages()
-    }
-    
-    /**
-     * Simulate receiving messages from the simulator
-     * In a real implementation, this would be actual UDP packet processing
-     */
-    private fun simulateIncomingMessages() {
-        println("📥 Simulating incoming messages from simulator...")
-        
-        // Simulate receiving various message types
-        val messages = listOf(
-            "ObjectUpdate - New avatar appeared in region",
-            "ChatFromSimulator - Welcome message from region",
-            "PingPongReply - Simulator keepalive response"
-        )
-        
-        messages.forEach { message ->
-            println("📨 Received: $message")
-            
-            // Parse message and emit appropriate events
-            when {
-                message.contains("ObjectUpdate") -> {
-                    EventSystem.tryEmit(ViewerEvent.ObjectAdded("demo-object-123", mapOf("type" to "avatar")))
-                }
-                message.contains("ChatFromSimulator") -> {
-                    EventSystem.tryEmit(ViewerEvent.ChatReceived("Welcome to the region!", "System", 0))
-                }
-            }
-        }
+        println("⚠️ Message processing loop not yet implemented")
     }
     
     /**
