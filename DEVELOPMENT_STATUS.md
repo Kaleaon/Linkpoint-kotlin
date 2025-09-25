@@ -120,34 +120,14 @@ Linkpoint-kotlin is a modern Kotlin-based virtual world viewer that imports and 
 
 ## Running the Project
 
-### Quick Demo
+### Simple Entry Point
 ```bash
-# Run the simple demonstration
-./simple-demo.sh
+# Run the simple viewer (no external dependencies)
+kotlinc -cp . src/main/kotlin/com/linkpoint/SimpleMain.kt -include-runtime -d build/simple.jar
+java -jar build/simple.jar
 ```
 
-### Protocol Implementation Demo
-```bash
-# Run the Protocol Implementation demonstration
-./standalone-protocol-demo.sh
-```
-
-### Graphics Pipeline Demo
-```bash
-# Run the Graphics Pipeline demonstration
-./simple-graphics-demo.sh
-```
-
-### Multi-Platform UI Demo
-```bash
-# Run the Mobile UI demonstration
-./simple-mobile-ui-demo.sh
-
-# Run the Desktop UI demonstration  
-./simple-desktop-ui-demo.sh
-```
-
-### Full Build (when Gradle issues resolved)
+### Full Build (when dependencies are resolved)
 ```bash
 # Build all modules
 ./gradlew build

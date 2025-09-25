@@ -110,51 +110,9 @@ enum class SimpleParticleType {
 }
 
 /**
- * Utility functions for creating demo entities
+ * Utility functions for working with world entities
  */
 object SimpleWorldEntityUtils {
-    
-    fun createDemoAvatar(position: SimpleVector3, name: String = "Demo Avatar"): SimpleAvatar {
-        return SimpleAvatar(
-            id = UUID.randomUUID(),
-            name = name,
-            position = position,
-            rotation = SimpleQuaternion(0f, 0f, 0f, 1f),
-            displayName = name,
-            username = name.lowercase().replace(" ", "."),
-            animationState = "standing"
-        )
-    }
-    
-    fun createDemoCube(position: SimpleVector3, name: String = "Demo Cube"): SimpleVirtualObject {
-        return SimpleVirtualObject(
-            id = UUID.randomUUID(),
-            name = name,
-            position = position,
-            rotation = SimpleQuaternion(0f, 0f, 0f, 1f),
-            scale = SimpleVector3(1f, 1f, 1f),
-            description = "A demonstration cube object",
-            objectType = SimpleObjectType.PRIMITIVE,
-            material = SimpleObjectMaterial.STONE
-        )
-    }
-    
-    fun createDemoParticleSystem(position: SimpleVector3, name: String = "Demo Particles"): SimpleParticleSystem {
-        return SimpleParticleSystem(
-            id = UUID.randomUUID(),
-            name = name,
-            position = position,
-            rotation = SimpleQuaternion(0f, 0f, 0f, 1f),
-            scale = SimpleVector3(1f, 1f, 1f),
-            particleType = SimpleParticleType.FIRE,
-            emissionRate = 50.0f,
-            particleLifetime = 3.0f,
-            startColor = SimpleColor.YELLOW,
-            endColor = SimpleColor.RED,
-            startSize = 0.1f,
-            endSize = 0.5f
-        )
-    }
     
     fun distance(entity1: SimpleWorldEntity, entity2: SimpleWorldEntity): Float {
         val dx = entity1.position.x - entity2.position.x

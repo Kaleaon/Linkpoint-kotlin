@@ -53,13 +53,7 @@ fun main(args: Array<String>) = runBlocking {
         
         // TODO: Show login UI or connect automatically
         // TODO: Start main event loop
-        // For now, just demonstrate the system is working
-        
-        // Simulate some activity
-        println("Simulating viewer activity...")
-        
-        // TODO: Remove this simulation once real functionality is implemented
-        kotlinx.coroutines.delay(1000)
+        println("⚠️ Login UI and main event loop not yet implemented")
         
     } catch (e: Exception) {
         logger.error(e) { "Error during viewer startup" }

@@ -2,11 +2,73 @@ package com.linkpoint.protocol
 
 import com.linkpoint.core.events.EventSystem
 import com.linkpoint.core.events.ViewerEvent
+import com.fasterxml.jackson.dataformat.xml.XmlMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.net.URL
 import java.net.HttpURLConnection
 import java.io.OutputStreamWriter
 import java.io.BufferedReader
 import java.io.InputStreamReader
+
+/**
+ * XMLRPC Response data classes for parsing SecondLife login responses
+ */
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcMethodResponse(
+    @JsonProperty("params") val params: XmlRpcParams? = null,
+    @JsonProperty("fault") val fault: XmlRpcFault? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcParams(
+    @JsonProperty("param") val param: XmlRpcParam
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcParam(
+    @JsonProperty("value") val value: XmlRpcValue
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcValue(
+    @JsonProperty("struct") val struct: XmlRpcStruct? = null,
+    @JsonProperty("string") val string: String? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcStruct(
+    @JsonProperty("member") val members: List<XmlRpcMember>
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcMember(
+    @JsonProperty("name") val name: String,
+    @JsonProperty("value") val value: XmlRpcMemberValue
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcMemberValue(
+    @JsonProperty("string") val string: String? = null,
+    @JsonProperty("int") val int: String? = null,
+    @JsonProperty("array") val array: XmlRpcArray? = null
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcArray(
+    @JsonProperty("data") val data: XmlRpcArrayData
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcArrayData(
+    @JsonProperty("value") val values: List<XmlRpcValue>
+)
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+data class XmlRpcFault(
+    @JsonProperty("value") val value: XmlRpcValue
+)
 
 /**
  * XMLRPC Login System for SecondLife/OpenSim compatible grids.
@@ -238,16 +300,105 @@ class LoginSystem {
     /**
      * Parse XMLRPC login response into LoginResponse data class
      * 
-     * This is a simplified parser for demonstration. A production implementation
-     * would use a proper XMLRPC library for robust parsing.
+     * Parses the XML response from SecondLife/OpenSim login servers.
+     * Implements proper XML parsing using Jackson XML mapper.
      */
     private fun parseLoginResponse(xmlResponse: String): LoginResponse {
-        // Simplified parsing - in production, use proper XML parsing
         println("📋 Parsing login response...")
         
-        // For demo purposes, simulate a successful login response
-        // In reality, this would parse the actual XML response from the server
-        if (xmlResponse.contains("fault") || xmlResponse.contains("error")) {
+        try {
+            val xmlMapper = XmlMapper().registerKotlinModule()
+            val response = xmlMapper.readValue(xmlResponse, XmlRpcMethodResponse::class.java)
+            
+            // Check for fault responses
+            if (response.fault != null) {
+                return LoginResponse(
+                    success = false,
+                    sessionId = null,
+                    agentId = null,
+                    secureSessionId = null,
+                    simIp = null,
+                    simPort = 0,
+                    seedCapability = null,
+                    circuitCode = 0,
+                    lookAt = null,
+                    agentAccess = null,
+                    message = "Login failed - server returned fault",
+                    reason = "Server fault"
+                )
+            }
+            
+            // Parse successful response
+            val struct = response.params?.param?.value?.struct
+            if (struct == null) {
+                return LoginResponse(
+                    success = false,
+                    sessionId = null,
+                    agentId = null,
+                    secureSessionId = null,
+                    simIp = null,
+                    simPort = 0,
+                    seedCapability = null,
+                    circuitCode = 0,
+                    lookAt = null,
+                    agentAccess = null,
+                    message = "Login failed - invalid response format",
+                    reason = "Invalid response"
+                )
+            }
+            
+            // Extract values from response
+            val memberMap = struct.members.associate { it.name to it.value }
+            
+            val sessionId = memberMap["session_id"]?.string
+            val agentId = memberMap["agent_id"]?.string
+            val secureSessionId = memberMap["secure_session_id"]?.string
+            val simIp = memberMap["sim_ip"]?.string
+            val simPort = memberMap["sim_port"]?.int?.toIntOrNull() ?: 0
+            val seedCapability = memberMap["seed_capability"]?.string
+            val circuitCode = memberMap["circuit_code"]?.int?.toIntOrNull() ?: 0
+            val agentAccess = memberMap["agent_access"]?.string
+            val message = memberMap["message"]?.string ?: "Login successful"
+            
+            // Parse look_at array if present
+            val lookAtArray = memberMap["look_at"]?.array?.data?.values
+            val lookAt = lookAtArray?.mapNotNull { it.string?.toFloatOrNull() }
+            
+            // Check if we have minimum required fields
+            if (sessionId == null || agentId == null) {
+                return LoginResponse(
+                    success = false,
+                    sessionId = null,
+                    agentId = null,
+                    secureSessionId = null,
+                    simIp = null,
+                    simPort = 0,
+                    seedCapability = null,
+                    circuitCode = 0,
+                    lookAt = null,
+                    agentAccess = null,
+                    message = "Login failed - missing required fields",
+                    reason = "Missing session or agent ID"
+                )
+            }
+            
+            return LoginResponse(
+                success = true,
+                sessionId = sessionId,
+                agentId = agentId,
+                secureSessionId = secureSessionId,
+                simIp = simIp,
+                simPort = simPort,
+                seedCapability = seedCapability,
+                circuitCode = circuitCode,
+                lookAt = lookAt,
+                agentAccess = agentAccess,
+                message = message,
+                reason = null
+            )
+            
+        } catch (e: Exception) {
+            println("❌ Error parsing XML response: ${e.message}")
             return LoginResponse(
                 success = false,
                 sessionId = null,
@@ -259,26 +410,10 @@ class LoginSystem {
                 circuitCode = 0,
                 lookAt = null,
                 agentAccess = null,
-                message = "Login failed - invalid credentials or server error",
-                reason = "Authentication failure"
+                message = "Login failed - XML parsing error: ${e.message}",
+                reason = "XML parsing error"
             )
         }
-        
-        // Simulate successful response parsing
-        return LoginResponse(
-            success = true,
-            sessionId = "demo-session-${System.currentTimeMillis()}",
-            agentId = "demo-agent-${System.currentTimeMillis()}",
-            secureSessionId = "demo-secure-${System.currentTimeMillis()}",
-            simIp = "127.0.0.1", // Localhost for demo
-            simPort = 9000,
-            seedCapability = "http://127.0.0.1:9000/cap/seed",
-            circuitCode = 12345,
-            lookAt = listOf(1.0f, 0.0f, 0.0f),
-            agentAccess = "PG",
-            message = "Welcome to the virtual world!",
-            reason = null
-        )
     }
     
     /**

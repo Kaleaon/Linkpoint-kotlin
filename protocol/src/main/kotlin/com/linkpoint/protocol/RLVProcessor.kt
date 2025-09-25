@@ -211,7 +211,7 @@ class RLVProcessor {
             RLVCommand.TPLOC -> handleTeleportRestriction(rlvCommand, value, objectId, objectName)
             else -> {
                 println("   ✅ Command acknowledged (not yet implemented)")
-                true // Acknowledge but don't implement complex commands in demo
+                true // Acknowledge but don't implement complex commands yet
             }
         }
     }
