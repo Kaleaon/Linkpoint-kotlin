@@ -5,6 +5,8 @@ import com.linkpoint.core.events.ViewerEvent
 import java.net.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlinx.coroutines.*
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * UDP Message System for SecondLife/OpenSim Protocol Communication
@@ -32,6 +34,11 @@ class UDPMessageSystem {
     private var simulatorAddress: InetAddress? = null
     private var simulatorPort: Int = 0
     private var sequenceNumber: Int = 0
+    
+    // Message processing control
+    private val isProcessing = AtomicBoolean(false)
+    private var processingJob: Job? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     
     // Message tracking for reliability
     private val pendingAcks = mutableMapOf<Int, PendingMessage>()
@@ -296,14 +303,143 @@ class UDPMessageSystem {
     private fun startMessageProcessing() {
         println("🔄 Starting message processing loop...")
         
-        // TODO: Implement actual UDP message processing loop
-        // This should run in a background thread and continuously:
-        // 1. Listen for incoming UDP packets
-        // 2. Parse message headers and content
-        // 3. Route messages to appropriate handlers
-        // 4. Send acknowledgments for reliable messages
+        if (isProcessing.getAndSet(true)) {
+            println("⚠️ Message processing already running")
+            return
+        }
         
-        println("⚠️ Message processing loop not yet implemented")
+        processingJob = coroutineScope.launch {
+            try {
+                val buffer = ByteArray(1500) // Standard MTU size
+                val packet = DatagramPacket(buffer, buffer.size)
+                
+                while (isProcessing.get() && isConnected) {
+                    try {
+                        // Listen for incoming UDP packets
+                        socket?.receive(packet)
+                        
+                        // Process the received packet
+                        processIncomingPacket(packet.data, packet.length)
+                        
+                        // Reset packet for next use
+                        packet.length = buffer.size
+                        
+                    } catch (e: SocketTimeoutException) {
+                        // Timeout is expected - continue listening
+                        continue
+                    } catch (e: Exception) {
+                        if (isProcessing.get()) {
+                            println("❌ Error in message processing loop: ${e.message}")
+                        }
+                        break
+                    }
+                }
+            } finally {
+                println("🛑 Message processing loop stopped")
+            }
+        }
+        
+        println("✅ Message processing loop started")
+    }
+    
+    /**
+     * Process an incoming UDP packet from the simulator
+     */
+    private fun processIncomingPacket(data: ByteArray, length: Int) {
+        if (length < 6) {
+            println("⚠️ Received packet too small: $length bytes")
+            return
+        }
+        
+        try {
+            val buffer = ByteBuffer.wrap(data, 0, length)
+            buffer.order(ByteOrder.LITTLE_ENDIAN)
+            
+            // Parse packet header
+            val flags = buffer.get().toInt() and 0xFF
+            val sequenceNum = buffer.int
+            val extraHeaderSize = if ((flags and 0x20) != 0) buffer.get().toInt() and 0xFF else 0
+            
+            // Skip extra header if present
+            if (extraHeaderSize > 0) {
+                buffer.position(buffer.position() + extraHeaderSize)
+            }
+            
+            // Parse message type
+            if (buffer.remaining() < 1) {
+                println("⚠️ No message type in packet")
+                return
+            }
+            
+            val messageTypeId = buffer.get().toInt() and 0xFF
+            val messageType = MessageType.fromId(messageTypeId)
+            
+            if (messageType == null) {
+                println("⚠️ Unknown message type: $messageTypeId")
+                return
+            }
+            
+            println("📨 Received ${messageType.name} (seq: $sequenceNum)")
+            
+            // Handle specific message types
+            when (messageType) {
+                MessageType.PACKET_ACK -> handlePacketAck(buffer, sequenceNum)
+                MessageType.OBJECT_UPDATE -> handleObjectUpdate(buffer, sequenceNum)
+                MessageType.CHAT_FROM_SIMULATOR -> handleChatMessage(buffer, sequenceNum)
+                MessageType.PING_PONG_REPLY -> handlePingPongReply(buffer, sequenceNum)
+                else -> println("   Message type not yet handled")
+            }
+            
+            // Send acknowledgment for reliable messages
+            if (messageType.reliable) {
+                sendAck(sequenceNum)
+            }
+            
+        } catch (e: Exception) {
+            println("❌ Error processing packet: ${e.message}")
+        }
+    }
+    
+    /**
+     * Handle PacketAck messages
+     */
+    private fun handlePacketAck(buffer: ByteBuffer, sequenceNum: Int) {
+        // Remove acknowledged messages from pending list
+        pendingAcks.remove(sequenceNum)
+        println("   ✅ Message $sequenceNum acknowledged")
+    }
+    
+    /**
+     * Handle ObjectUpdate messages
+     */
+    private fun handleObjectUpdate(buffer: ByteBuffer, sequenceNum: Int) {
+        // Parse object update data (simplified)
+        println("   📦 Object update received")
+        EventSystem.tryEmit(ViewerEvent.ObjectUpdated("object-${System.currentTimeMillis()}", emptyMap()))
+    }
+    
+    /**
+     * Handle ChatFromSimulator messages
+     */
+    private fun handleChatMessage(buffer: ByteBuffer, sequenceNum: Int) {
+        // Parse chat message (simplified)
+        println("   💬 Chat message received")
+        EventSystem.tryEmit(ViewerEvent.ChatReceived("System message", "System", 0))
+    }
+    
+    /**
+     * Handle PingPongReply messages
+     */
+    private fun handlePingPongReply(buffer: ByteBuffer, sequenceNum: Int) {
+        println("   🏓 Ping pong reply received")
+    }
+    
+    /**
+     * Send acknowledgment for a reliable message
+     */
+    private fun sendAck(sequenceNum: Int) {
+        // TODO: Implement proper ACK message format
+        println("   📤 Sending ACK for sequence $sequenceNum")
     }
     
     /**
@@ -371,6 +507,12 @@ class UDPMessageSystem {
      * Clean up socket and connection resources
      */
     private fun cleanup() {
+        // Stop message processing
+        isProcessing.set(false)
+        processingJob?.cancel()
+        processingJob = null
+        
+        // Clean up connection
         isConnected = false
         socket?.close()
         socket = null
