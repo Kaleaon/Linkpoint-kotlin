@@ -21,6 +21,15 @@ mkdir -p batch-processor/reports
 # Set environment variables
 export JAVA_OPTS="-Xmx4g -XX:+UseG1GC"
 
+# Check for automation flags
+AUTOMATED_RUN=${AUTOMATED_RUN:-false}
+REPOSITORIES=${REPOSITORIES:-all}
+
+if [ "$AUTOMATED_RUN" = "true" ] || [ "$SKIP_CONFIRMATION" = "true" ]; then
+    echo "🤖 Running in automated mode"
+    echo "Repositories to process: $REPOSITORIES"
+fi
+
 echo "🔧 Building batch processor..."
 cd batch-processor
 
@@ -42,12 +51,16 @@ echo "  • Libremetaverse (github.com/openmetaversefoundation/libopenmetaverse)
 echo "  • Restrained Love Viewer (github.com/RestrainedLove/RestrainedLove)"
 echo ""
 
-# Ask for confirmation
-read -p "Continue with batch processing? (y/N): " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Batch processing cancelled."
-    exit 0
+# Ask for confirmation (skip if running in automated mode)
+if [ "${SKIP_CONFIRMATION:-false}" != "true" ]; then
+    read -p "Continue with batch processing? (y/N): " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Batch processing cancelled."
+        exit 0
+    fi
+else
+    echo "Running in automated mode - skipping confirmation"
 fi
 
 echo "📥 Starting download and conversion process..."

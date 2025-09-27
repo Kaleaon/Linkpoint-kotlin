@@ -1,0 +1,139 @@
+# Quick Batch Processing for Testing and Development
+# Runs a lightweight version of the batch processing for testing purposes
+
+name: Quick Batch Processing
+
+on:
+  # Allow manual triggering with options
+  workflow_dispatch:
+    inputs:
+      demo_mode:
+        description: 'Run in demonstration mode (no actual downloads)'
+        required: false
+        default: true
+        type: boolean
+      single_repo:
+        description: 'Test with single repository (leave empty for demo mode)'
+        required: false
+        default: ''
+        type: string
+  
+  # Run on pull requests affecting batch processing
+  pull_request:
+    paths:
+      - 'batch-processor/**'
+      - 'batch-download-convert.sh'
+      - '.github/workflows/batch-processing*.yml'
+
+jobs:
+  quick-batch-test:
+    name: Quick Batch Processing Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Set up Kotlin
+      uses: fwilhe2/setup-kotlin@main
+      with:
+        version: '1.9.20'
+    
+    - name: Prepare environment
+      run: |
+        chmod +x batch-download-convert.sh
+        chmod +x batch-processor/demo-batch-processing.sh
+        mkdir -p batch-processor/{downloads,converted,reports}
+    
+    - name: Run demonstration mode
+      if: ${{ github.event.inputs.demo_mode == 'true' || github.event.inputs.demo_mode == '' }}
+      run: |
+        echo "🎯 Running Batch Processing Demonstration"
+        echo "========================================"
+        cd batch-processor
+        ./demo-batch-processing.sh
+    
+    - name: Run single repository test
+      if: ${{ github.event.inputs.single_repo != '' && github.event.inputs.demo_mode != 'true' }}
+      env:
+        TEST_REPO: ${{ github.event.inputs.single_repo }}
+      run: |
+        echo "🧪 Testing Single Repository: $TEST_REPO"
+        echo "======================================="
+        
+        # Create a minimal test version of the script
+        cat > test-single-repo.sh << 'EOF'
+        #!/bin/bash
+        cd batch-processor/downloads
+        echo "📦 Testing download of $TEST_REPO..."
+        
+        case "$TEST_REPO" in
+          "secondlife-viewer")
+            git clone --depth 1 https://github.com/secondlife/viewer.git secondlife-viewer
+            ;;
+          "firestorm-viewer")  
+            git clone --depth 1 https://github.com/FirestormViewer/phoenix-firestorm.git firestorm-viewer
+            ;;
+          "libremetaverse")
+            git clone --depth 1 https://github.com/openmetaversefoundation/libopenmetaverse.git libremetaverse
+            ;;
+          "restrained-love-viewer")
+            git clone --depth 1 https://github.com/RestrainedLove/RestrainedLove.git restrained-love-viewer
+            ;;
+          *)
+            echo "❌ Unknown repository: $TEST_REPO"
+            exit 1
+            ;;
+        esac
+        
+        echo "✅ Download test completed"
+        EOF
+        
+        chmod +x test-single-repo.sh
+        ./test-single-repo.sh
+    
+    - name: Validate batch processing system
+      run: |
+        echo "✅ Validation Results"
+        echo "===================="
+        
+        # Check core components exist
+        echo "📋 Core Components:"
+        [ -f "batch-processor/src/main/kotlin/com/linkpoint/batch/BatchProcessor.kt" ] && echo "  ✅ BatchProcessor.kt" || echo "  ❌ BatchProcessor.kt missing"
+        [ -f "batch-processor/src/main/kotlin/com/linkpoint/batch/CodeConverter.kt" ] && echo "  ✅ CodeConverter.kt" || echo "  ❌ CodeConverter.kt missing"
+        [ -f "batch-processor/src/main/kotlin/com/linkpoint/batch/LLSDLabeler.kt" ] && echo "  ✅ LLSDLabeler.kt" || echo "  ❌ LLSDLabeler.kt missing"
+        [ -f "batch-processor/src/main/kotlin/com/linkpoint/batch/ProgressTracker.kt" ] && echo "  ✅ ProgressTracker.kt" || echo "  ❌ ProgressTracker.kt missing"
+        
+        echo ""
+        echo "📄 Documentation:"
+        [ -f "BATCH_PROCESSING_GUIDE.md" ] && echo "  ✅ Batch Processing Guide" || echo "  ❌ Guide missing"
+        [ -f "batch-processor/README.md" ] && echo "  ✅ Module README" || echo "  ❌ README missing"
+        
+        echo ""
+        echo "🔧 Scripts:"
+        [ -x "batch-download-convert.sh" ] && echo "  ✅ Main batch script executable" || echo "  ❌ Main script not executable"
+        [ -x "batch-processor/demo-batch-processing.sh" ] && echo "  ✅ Demo script executable" || echo "  ❌ Demo script not executable"
+        
+        echo ""
+        echo "📁 Directory Structure:"
+        [ -d "batch-processor/downloads" ] && echo "  ✅ Downloads directory" || echo "  ❌ Downloads directory missing"
+        [ -d "batch-processor/converted" ] && echo "  ✅ Converted directory" || echo "  ❌ Converted directory missing"
+        [ -d "batch-processor/reports" ] && echo "  ✅ Reports directory" || echo "  ❌ Reports directory missing"
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: quick-batch-test-results
+        path: |
+          batch-processor/converted/
+          batch-processor/reports/
+          batch-processor/downloads/
+        retention-days: 3

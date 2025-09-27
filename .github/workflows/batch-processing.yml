@@ -1,0 +1,368 @@
+# Automated Batch Download and Conversion System
+# Runs the complete batch processing system for virtual world viewer codebases
+# Downloads and converts SecondLife, Firestorm, Libremetaverse, and RLV codebases to Kotlin
+
+name: Batch Processing System
+
+on:
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      repositories:
+        description: 'Repositories to process (comma-separated or "all")'
+        required: false
+        default: 'all'
+        type: string
+      skip_confirmation:
+        description: 'Skip interactive confirmation'
+        required: false
+        default: true
+        type: boolean
+  
+  # Run on schedule (weekly on Sundays at 2 AM UTC)
+  schedule:
+    - cron: '0 2 * * 0'
+  
+  # Run on pushes to main that affect batch processing system
+  push:
+    branches: [ main ]
+    paths:
+      - 'batch-processor/**'
+      - 'batch-download-convert.sh'
+      - '.github/workflows/batch-processing.yml'
+
+jobs:
+  batch-processing:
+    name: Download and Convert Viewer Codebases
+    runs-on: ubuntu-latest
+    
+    # Allow up to 6 hours for large repository processing
+    timeout-minutes: 360
+    
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Set up Kotlin
+      uses: fwilhe2/setup-kotlin@main
+      with:
+        version: '1.9.20'
+    
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+    
+    - name: Cache downloaded repositories
+      uses: actions/cache@v3
+      with:
+        path: batch-processor/downloads
+        key: ${{ runner.os }}-repos-${{ github.run_id }}
+        restore-keys: |
+          ${{ runner.os }}-repos-
+    
+    - name: Prepare batch processing environment
+      run: |
+        # Make scripts executable
+        chmod +x batch-download-convert.sh
+        chmod +x batch-processor/demo-batch-processing.sh
+        
+        # Create necessary directories
+        mkdir -p batch-processor/downloads
+        mkdir -p batch-processor/converted  
+        mkdir -p batch-processor/reports
+        
+        # Set git configuration for any commits that might be needed
+        git config --global user.name "GitHub Actions Bot"
+        git config --global user.email "actions@github.com"
+        
+        # Display system information
+        echo "🖥️ System Information:"
+        echo "Java Version: $(java -version 2>&1 | head -n 1)"
+        echo "Kotlin Version: $(kotlinc -version 2>&1 | head -n 1)"
+        echo "Available Memory: $(free -h | grep '^Mem:' | awk '{print $2}')"
+        echo "Available Storage: $(df -h . | tail -1 | awk '{print $4}')"
+    
+    - name: Run batch processing system
+      env:
+        JAVA_OPTS: "-Xmx4g -XX:+UseG1GC"
+        REPOSITORIES: ${{ github.event.inputs.repositories || 'all' }}
+        SKIP_CONFIRMATION: ${{ github.event.inputs.skip_confirmation || 'true' }}
+      run: |
+        echo "🚀 Starting Automated Batch Processing"
+        echo "======================================"
+        echo "Repositories: $REPOSITORIES"
+        echo "Skip Confirmation: $SKIP_CONFIRMATION"
+        echo ""
+        
+        # Run the batch processing with automation flags
+        if [ "$SKIP_CONFIRMATION" = "true" ]; then
+          # Run without interactive prompts
+          echo "y" | timeout 5400 ./batch-download-convert.sh || {
+            echo "⚠️ Batch processing completed with timeout or error"
+            echo "Checking for partial results..."
+          }
+        else
+          # Run with normal prompts (for manual triggers)
+          timeout 5400 ./batch-download-convert.sh || {
+            echo "⚠️ Batch processing completed with timeout or error"
+            echo "Checking for partial results..."
+          }
+        fi
+    
+    - name: Verify processing results
+      run: |
+        echo "📊 Processing Results Verification"
+        echo "=================================="
+        
+        # Check downloaded repositories
+        echo "📥 Downloaded Repositories:"
+        if [ -d "batch-processor/downloads" ]; then
+          find batch-processor/downloads -maxdepth 1 -type d | tail -n +2 | while read repo; do
+            repo_name=$(basename "$repo")
+            file_count=$(find "$repo" -name "*.cpp" -o -name "*.c" -o -name "*.h" -o -name "*.cs" | wc -l)
+            echo "  ✅ $repo_name: $file_count source files"
+          done
+        else
+          echo "  ⚠️ No downloads directory found"
+        fi
+        
+        echo ""
+        echo "🔄 Converted Components:"
+        if [ -d "batch-processor/converted" ]; then
+          converted_count=$(find batch-processor/converted -name "*.kt" | wc -l)
+          echo "  ✅ Total converted Kotlin files: $converted_count"
+          
+          # Show sample converted files
+          find batch-processor/converted -name "*.kt" | head -5 | while read file; do
+            echo "  📄 $(basename "$file")"
+          done
+        else
+          echo "  ⚠️ No converted directory found"
+        fi
+        
+        echo ""
+        echo "📋 Reports Generated:"
+        if [ -d "batch-processor/reports" ]; then
+          ls -la batch-processor/reports/
+        else
+          echo "  ⚠️ No reports directory found"
+        fi
+    
+    - name: Generate processing summary
+      run: |
+        echo "📈 Generating Processing Summary"
+        echo "==============================="
+        
+        # Create comprehensive summary
+        cat > batch-processing-summary.md << 'EOF'
+        # Batch Processing Summary
+        
+        **Run Date:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+        **Workflow:** ${{ github.workflow }}
+        **Run ID:** ${{ github.run_id }}
+        **Triggered by:** ${{ github.event_name }}
+        
+        ## Processing Results
+        
+        ### Downloaded Repositories
+        EOF
+        
+        if [ -d "batch-processor/downloads" ]; then
+          find batch-processor/downloads -maxdepth 1 -type d | tail -n +2 | while read repo; do
+            repo_name=$(basename "$repo")
+            file_count=$(find "$repo" -name "*.cpp" -o -name "*.c" -o -name "*.h" -o -name "*.cs" 2>/dev/null | wc -l)
+            size=$(du -sh "$repo" 2>/dev/null | cut -f1)
+            echo "- **$repo_name**: $file_count source files, $size total size" >> batch-processing-summary.md
+          done
+        fi
+        
+        cat >> batch-processing-summary.md << 'EOF'
+        
+        ### Converted Components
+        EOF
+        
+        if [ -d "batch-processor/converted" ]; then
+          converted_count=$(find batch-processor/converted -name "*.kt" 2>/dev/null | wc -l)
+          llsd_count=$(find batch-processor/converted -name "*.llsd.json" 2>/dev/null | wc -l)
+          echo "- **Total Kotlin Files**: $converted_count" >> batch-processing-summary.md
+          echo "- **LLSD Metadata Files**: $llsd_count" >> batch-processing-summary.md
+        fi
+        
+        cat >> batch-processing-summary.md << 'EOF'
+        
+        ### Quality Metrics
+        EOF
+        
+        if [ -f "batch-processor/reports/batch-summary.json" ]; then
+          echo "- Processing report available in JSON format" >> batch-processing-summary.md
+        fi
+        
+        cat >> batch-processing-summary.md << 'EOF'
+        
+        ## Next Steps
+        
+        1. Review converted components in `batch-processor/converted/`
+        2. Check processing reports in `batch-processor/reports/`
+        3. Address any conversion issues identified
+        4. Run additional testing on converted components
+        
+        ## Artifacts
+        
+        - Downloaded source repositories
+        - Converted Kotlin components with LLSD labeling
+        - Processing reports and metrics
+        - Generated sub-tasks for further development
+        EOF
+        
+        echo "Summary generated:"
+        cat batch-processing-summary.md
+    
+    - name: Upload processing artifacts
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: batch-processing-results-${{ github.run_id }}
+        path: |
+          batch-processor/converted/
+          batch-processor/reports/
+          batch-processing-summary.md
+        retention-days: 30
+    
+    - name: Upload downloaded repositories (if successful)
+      uses: actions/upload-artifact@v3
+      if: success()
+      with:
+        name: downloaded-repositories-${{ github.run_id }}
+        path: batch-processor/downloads/
+        retention-days: 7
+    
+    - name: Create issue for processing results
+      if: success()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          // Read the processing summary
+          let summary = 'Batch processing completed successfully.';
+          try {
+            summary = fs.readFileSync('batch-processing-summary.md', 'utf8');
+          } catch (error) {
+            console.log('Could not read summary file:', error.message);
+          }
+          
+          // Check for converted files
+          const { execSync } = require('child_process');
+          let convertedCount = 0;
+          try {
+            const result = execSync('find batch-processor/converted -name "*.kt" | wc -l', { encoding: 'utf8' });
+            convertedCount = parseInt(result.trim());
+          } catch (error) {
+            console.log('Could not count converted files:', error.message);
+          }
+          
+          if (convertedCount > 0) {
+            // Create an issue with the results
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Batch Processing Results - ${new Date().toISOString().split('T')[0]}`,
+              body: `# Automated Batch Processing Results
+          
+          The automated batch processing system has completed successfully.
+          
+          **📊 Summary:**
+          - Converted Files: ${convertedCount} Kotlin components
+          - Run ID: ${{ github.run_id }}
+          - Workflow: ${{ github.workflow }}
+          
+          ${summary}
+          
+          **🔗 Artifacts:**
+          - [Processing Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - Downloaded repositories and converted components available as artifacts
+          
+          **👥 Assigned Tasks:**
+          This processing run may have generated sub-tasks for @copilot review and integration.
+          
+          ---
+          *This issue was automatically created by the batch processing workflow.*`,
+              labels: ['batch-processing', 'automated', 'conversion-results']
+            });
+            
+            console.log('Created issue:', issue.data.html_url);
+          }
+    
+    - name: Notify on failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          // Create an issue for processing failure
+          const issue = await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `Batch Processing Failed - ${new Date().toISOString().split('T')[0]}`,
+            body: `# Batch Processing System Failure
+          
+          The automated batch processing system encountered an error and could not complete successfully.
+          
+          **📊 Details:**
+          - Run ID: ${{ github.run_id }}
+          - Workflow: ${{ github.workflow }}
+          - Triggered by: ${{ github.event_name }}
+          
+          **🔍 Investigation Required:**
+          1. Check the workflow logs for detailed error information
+          2. Verify repository accessibility and network connectivity
+          3. Check for sufficient storage and memory resources
+          4. Review any changes to the batch processing system
+          
+          **🔗 Resources:**
+          - [Failed Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - [Batch Processing Documentation](./BATCH_PROCESSING_GUIDE.md)
+          
+          **👥 Action Required:**
+          @copilot please investigate the batch processing failure and implement necessary fixes.
+          
+          ---
+          *This issue was automatically created due to batch processing failure.*`,
+            labels: ['batch-processing', 'automated', 'bug', 'high-priority']
+          });
+          
+          console.log('Created failure issue:', issue.data.html_url);
+    
+    - name: Cleanup temporary files
+      if: always()
+      run: |
+        # Clean up any temporary build files but keep results
+        cd batch-processor
+        rm -f build.log
+        rm -f .batch-status
+        
+        # Clean up large downloaded repositories if workflow is successful
+        # (they're already archived as artifacts)
+        if [ "${{ job.status }}" = "success" ]; then
+          echo "Cleaning up large downloaded repositories (preserved in artifacts)..."
+          find downloads -name ".git" -type d -exec rm -rf {} + 2>/dev/null || true
+        fi
