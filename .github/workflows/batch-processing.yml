@@ -238,7 +238,7 @@ jobs:
         cat batch-processing-summary.md
     
     - name: Upload processing artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: batch-processing-results-${{ github.run_id }}
@@ -249,7 +249,7 @@ jobs:
         retention-days: 30
     
     - name: Upload downloaded repositories (if successful)
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: success()
       with:
         name: downloaded-repositories-${{ github.run_id }}
