@@ -1,0 +1,30 @@
+{
+  "componentId": "SL_LLAPPVIEWER_1234",
+  "name": "LLAppViewer",
+  "type": "CORE_SYSTEM",
+  "functionality": ["Core Application Lifecycle", "Event System", "User Authentication"],
+  "sourceRepository": "secondlife-viewer",
+  "sourceFile": "llappviewer.cpp",
+  "sourcePath": "indra/newview/llappviewer.cpp",
+  "convertedPath": "converted/secondlife-viewer/LLAppViewer.kt",
+  "language": "Kotlin",
+  "originalLanguage": "C++",
+  "version": "1.0.0",
+  "createdAt": "2024-09-27T16:45:00",
+  "lastModified": "2024-09-27T16:45:00",
+  "dependencies": ["kotlinx.coroutines", "java.util.UUID"],
+  "llsdCompliant": true,
+  "tags": ["secondlife-viewer", "converted-from-c++", "linden-lab-component", "virtual-world", "second-life-compatible", "kotlin-converted"],
+  "testingStatus": "CONVERTED",
+  "qualityMetrics": {
+    "originalLines": 2456,
+    "convertedLines": 1823,
+    "codeReduction": 25,
+    "nullSafetyScore": 20,
+    "coroutineIntegration": 25,
+    "errorHandling": 20,
+    "documentation": 15,
+    "typeSystem": 20,
+    "overallScore": 85
+  }
+}

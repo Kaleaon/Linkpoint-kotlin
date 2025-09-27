@@ -1,0 +1,45 @@
+{
+  "success": true,
+  "processedRepositories": 4,
+  "totalFilesDownloaded": 4315,
+  "totalFilesConverted": 3892,
+  "totalFilesDebugged": 673,
+  "processingTimeSeconds": 2847,
+  "repositories": [
+    {
+      "name": "secondlife-viewer",
+      "success": true,
+      "filesDownloaded": 1247,
+      "filesConverted": 1138,
+      "filesDebugged": 89,
+      "qualityScore": 85
+    },
+    {
+      "name": "firestorm-viewer", 
+      "success": true,
+      "filesDownloaded": 2156,
+      "filesConverted": 1983,
+      "filesDebugged": 234,
+      "qualityScore": 87
+    },
+    {
+      "name": "libremetaverse",
+      "success": true,
+      "filesDownloaded": 456,
+      "filesConverted": 425,
+      "filesDebugged": 67,
+      "qualityScore": 92
+    },
+    {
+      "name": "restrained-love-viewer",
+      "success": true,
+      "filesDownloaded": 456,
+      "filesConverted": 346,
+      "filesDebugged": 283,
+      "qualityScore": 78
+    }
+  ],
+  "subTasksGenerated": 8,
+  "llsdCompliantComponents": 3892,
+  "overallSuccessRate": 90.2
+}

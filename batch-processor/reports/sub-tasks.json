@@ -1,0 +1,38 @@
+[
+  {
+    "id": "translate-secondlife-viewer",
+    "title": "Translate SecondLife Viewer Components",
+    "description": "Review and refine Kotlin translation of 1,247 files from SecondLife Viewer",
+    "assignee": "@copilot",
+    "priority": "HIGH",
+    "estimatedHours": 124,
+    "createdAt": "2024-09-27T16:45:00"
+  },
+  {
+    "id": "test-secondlife-viewer",
+    "title": "Test SecondLife Viewer Components",
+    "description": "Create and execute tests for converted SecondLife Viewer components",
+    "assignee": "@copilot",
+    "priority": "MEDIUM",
+    "estimatedHours": 62,
+    "createdAt": "2024-09-27T16:45:00"
+  },
+  {
+    "id": "translate-firestorm-viewer",
+    "title": "Translate Firestorm Viewer Components",
+    "description": "Review and refine Kotlin translation of 2,156 files from Firestorm Viewer",
+    "assignee": "@copilot",
+    "priority": "HIGH",
+    "estimatedHours": 215,
+    "createdAt": "2024-09-27T16:45:00"
+  },
+  {
+    "id": "translate-libremetaverse",
+    "title": "Translate Libremetaverse Components",
+    "description": "Review and refine Kotlin translation of 456 files from Libremetaverse",
+    "assignee": "@copilot",
+    "priority": "MEDIUM",
+    "estimatedHours": 45,
+    "createdAt": "2024-09-27T16:45:00"
+  }
+]
