@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 xmlns:vm="clr-namespace:LumiyaChat.App"
+			 x:Class="LumiyaChat.App.LoginPage"
+			 Title="Login">
+	<ContentPage.BindingContext>
+		<vm:LoginViewModel />
+	</ContentPage.BindingContext>
+	<VerticalStackLayout Spacing="12" Padding="24">
+		<Entry Placeholder="First name" Text="{Binding FirstName}" />
+		<Entry Placeholder="Last name" Text="{Binding LastName}" />
+		<Entry Placeholder="Password" IsPassword="True" Text="{Binding Password}" />
+		<Entry Placeholder="Login URI" Text="{Binding LoginUri}" />
+		<Button Text="Login" Command="{Binding LoginCommand}" />
+		<Label TextColor="Red" Text="{Binding Error}" />
+	</VerticalStackLayout>
+</ContentPage>
