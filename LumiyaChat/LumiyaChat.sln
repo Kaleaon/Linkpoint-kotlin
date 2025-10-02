@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LumiyaChat.Core", "LumiyaChat.Core\LumiyaChat.Core.csproj", "{412CA703-AF90-475B-9B1E-DF29B99DBDD3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LumiyaChat.App", "LumiyaChat.App\LumiyaChat.App.csproj", "{5D9FA3DB-32EE-48FF-8117-7B0AF77DC40F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{412CA703-AF90-475B-9B1E-DF29B99DBDD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{412CA703-AF90-475B-9B1E-DF29B99DBDD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{412CA703-AF90-475B-9B1E-DF29B99DBDD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{412CA703-AF90-475B-9B1E-DF29B99DBDD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D9FA3DB-32EE-48FF-8117-7B0AF77DC40F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D9FA3DB-32EE-48FF-8117-7B0AF77DC40F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D9FA3DB-32EE-48FF-8117-7B0AF77DC40F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D9FA3DB-32EE-48FF-8117-7B0AF77DC40F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

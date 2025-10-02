@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+			 xmlns:vm="clr-namespace:LumiyaChat.App"
+			 x:Class="LumiyaChat.App.ChatPage"
+			 Title="Chat">
+	<ContentPage.BindingContext>
+		<vm:ChatViewModel />
+	</ContentPage.BindingContext>
+	<Grid RowDefinitions="Auto,* ,Auto" Padding="12">
+		<Label Text="Connected" Grid.Row="0" />
+		<CollectionView Grid.Row="1" ItemsSource="{Binding Messages}">
+			<CollectionView.ItemTemplate>
+				<DataTemplate>
+					<VerticalStackLayout>
+						<Label FontAttributes="Bold" Text="{Binding FromName}" />
+						<Label Text="{Binding Text}" />
+					</VerticalStackLayout>
+				</DataTemplate>
+			</CollectionView.ItemTemplate>
+		</CollectionView>
+		<Grid Grid.Row="2" ColumnDefinitions="*,Auto">
+			<Entry Text="{Binding Outgoing}" />
+			<Button Grid.Column="1" Text="Send" Command="{Binding SendCommand}" />
+		</Grid>
+	</Grid>
+</ContentPage>
